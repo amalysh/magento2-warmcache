@@ -13,10 +13,8 @@
 
 namespace Igorludgero\WarmCache\Helper;
 
-use Magento\Catalog\Model\CategoryFactory;
 use Magento\Catalog\Model\Product\Attribute\Source\Status;
 use Magento\Catalog\Model\Product\Visibility;
-use Magento\Catalog\Model\ProductFactory;
 use Magento\Cms\Model\PageFactory;
 use Magento\Framework\App\Config\Storage\WriterInterface;
 use Magento\Framework\App\Helper\AbstractHelper;
@@ -25,6 +23,8 @@ use Magento\Framework\Url;
 use Magento\Store\Model\ScopeInterface;
 use Magento\UrlRewrite\Model\UrlRewriteFactory;
 use Zend\Log\Logger;
+use Magento\Catalog\Model\ResourceModel\Category\CollectionFactory as CategoryFactory;
+use Magento\Catalog\Model\ResourceModel\Product\CollectionFactory as ProductFactory;
 
 class Data extends AbstractHelper
 {
@@ -116,14 +116,23 @@ class Data extends AbstractHelper
     {
         //Add Products url
         if ($this->scopeConfig->getValue('warmcache/settings/product', ScopeInterface::SCOPE_STORE)) {
-            $_productCollection = $this->productModel->create()->getCollection()
+            $_productCollection = $this->productModel->create()
                 ->addAttributeToFilter('status', Status::STATUS_ENABLED)
                 ->addAttributeToFilter(
                     'visibility',
                     array(Visibility::VISIBILITY_IN_CATALOG, Visibility::VISIBILITY_BOTH)
                 )
-                ->addAttributeToSelect(["entity_id"]);
+                ->addUrlRewrite();
             foreach ($_productCollection as $_product) {
+                // get rewrite URL
+                if (!empty($_product->getRequestPath())) {
+                    $url = $this->frontUrlModel->getUrl($_product->getRequestPath());
+                }
+                if (!in_array($url, $this->urls)) {
+                    $this->urls[] = $url;
+                }
+
+                // create reqgular URL
                 $url = $this->frontUrlModel->getUrl("catalog/product/view", ['id' => $_product->getId()]);
                 if (!in_array($url, $this->urls)) {
                     $this->urls[] = $url;
@@ -133,10 +142,16 @@ class Data extends AbstractHelper
 
         //Add category url
         if ($this->scopeConfig->getValue('warmcache/settings/category', ScopeInterface::SCOPE_STORE)) {
-            $_categoryCollection = $this->categoryModel->create()->getCollection()
+            $_categoryCollection = $this->categoryModel->create()
                 ->addAttributeToFilter('is_active', 1)
-                ->addAttributeToSelect(["entity_id"]);
+                ->addUrlRewriteToResult();
             foreach ($_categoryCollection as $_category) {
+                // get rewrite URL
+                $url = $_category->getUrl();
+                if (!in_array($url, $this->urls)) {
+                    $this->urls[] = $url;
+                }
+                // create regular URL
                 $url = $this->frontUrlModel->getUrl("catalog/category/view", ['id' => $_category->getId()]);
                 if (!in_array($url, $this->urls)) {
                     $this->urls[] = $url;
