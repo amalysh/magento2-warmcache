@@ -127,9 +127,9 @@ class Data extends AbstractHelper
                 // get rewrite URL
                 if (!empty($_product->getRequestPath())) {
                     $url = $this->frontUrlModel->getUrl($_product->getRequestPath());
-                }
-                if (!in_array($url, $this->urls)) {
-                    $this->urls[] = $url;
+                    if (!in_array($url, $this->urls)) {
+                        $this->urls[] = $url;
+                    }
                 }
 
                 // create reqgular URL
