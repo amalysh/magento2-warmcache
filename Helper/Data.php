@@ -235,6 +235,13 @@ class Data extends AbstractHelper
 
         $ch = curl_init($url);
         curl_setopt_array($ch, $options);
+        // check if we have to set htauth
+        if ($this->scopeConfig->getValue('warmcache/settings/htauth', ScopeInterface::SCOPE_STORE)) {
+            $username = $this->scopeConfig->getValue('warmcache/settings/username', ScopeInterface::SCOPE_STORE);
+            $password = $this->scopeConfig->getValue('warmcache/settings/password', ScopeInterface::SCOPE_STORE);
+            curl_setopt($ch, CURLOPT_USERPWD, "$username:$password");
+            curl_setopt($ch, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
+        }
         $content = curl_exec($ch);
         $err     = curl_errno($ch);
         $errmsg  = curl_error($ch);
